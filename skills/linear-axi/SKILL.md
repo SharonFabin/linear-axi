@@ -18,12 +18,12 @@ Linear tasks in fewer turns and tokens than the Linear MCP.
 
 ## Setup
 
-- Auth (any one): `npx -y linear-axi setup auth --key lin_api_...` to save it to
+- Auth (any one): `npx -y @pgalka0/linear-axi setup auth --key lin_api_...` to save it to
   `~/.config/linear-axi/config.json`, or set `LINEAR_API_KEY`, or a `.env` in the
   working directory. Env takes precedence over the saved config.
 - Optional: `--team` on `setup auth`, or `LINEAR_AXI_DEFAULT_TEAM`, sets the
   default team so `--team` can be omitted.
-- Invoke without a global install: `npx -y linear-axi <command>`.
+- Invoke without a global install: `npx -y @pgalka0/linear-axi <command>`.
 
 ## When to use
 
@@ -36,21 +36,21 @@ Linear tasks in fewer turns and tokens than the Linear MCP.
 
 1. Run with no arguments to see live context (your open issues) and discover commands:
    ```
-   npx -y linear-axi
+   npx -y @pgalka0/linear-axi
    ```
 2. Narrow down with `issue list`; every list ends with `count:` and next-step hints:
    ```
-   npx -y linear-axi issue list --assignee @me --state open
-   npx -y linear-axi issue list --query "oauth" --fields priority,updated
+   npx -y @pgalka0/linear-axi issue list --assignee @me --state open
+   npx -y @pgalka0/linear-axi issue list --query "oauth" --fields priority,updated
    ```
 3. Open one issue for full detail (description is truncated; add `--full` for all of it):
    ```
-   npx -y linear-axi issue view TEAM-123
+   npx -y @pgalka0/linear-axi issue view TEAM-123
    ```
 4. Mutate. Combine operations to save turns - one call can set status, assignee, and comment:
    ```
-   npx -y linear-axi issue update TEAM-123 --state "In Progress" --assignee @me --comment "started"
-   npx -y linear-axi issue create --title "Fix login" --priority high --comment "repro attached"
+   npx -y @pgalka0/linear-axi issue update TEAM-123 --state "In Progress" --assignee @me --comment "started"
+   npx -y @pgalka0/linear-axi issue create --title "Fix login" --priority high --comment "repro attached"
    ```
 5. Discover any subcommand's flags with `--help`; it prints a concise reference, not a manual.
 

@@ -51,10 +51,10 @@ Requires Node.js 20+.
 
 ```bash
 # zero-install (recommended for agents)
-npx -y linear-axi
+npx -y @pgalka0/linear-axi
 
-# or global
-npm install -g linear-axi
+# or global (the installed command is `linear-axi`)
+npm install -g @pgalka0/linear-axi
 ```
 
 Set a personal API key (Linear -> Settings -> Security & access -> Personal API keys).

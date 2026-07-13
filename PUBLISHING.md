@@ -27,11 +27,11 @@ references the URL from track A, so do A first.
    `prepublishOnly` runs the build and tests first. Then confirm the zero-install
    path an agent uses:
    ```bash
-   npx -y linear-axi --help
+   npx -y @pgalka0/linear-axi --help
    ```
 6. **(Optional) Advertise the skill** so agents can install it directly:
    ```bash
-   npx skills add <you>/linear-axi --skill linear-axi -g
+   npx skills add pgalka0/linear-axi --skill linear-axi -g
    ```
 
 ## B. List it in the AXI catalog
