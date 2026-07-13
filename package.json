@@ -1,0 +1,58 @@
+{
+  "name": "linear-axi",
+  "version": "0.1.0",
+  "description": "Agent-ergonomic CLI for Linear, built to the AXI (Agent eXperience Interface) standard",
+  "type": "module",
+  "license": "MIT",
+  "author": "Piotr Galka",
+  "keywords": [
+    "linear",
+    "axi",
+    "agent",
+    "cli",
+    "llm",
+    "mcp",
+    "toon",
+    "issues"
+  ],
+  "homepage": "https://github.com/pgalka0/linear-axi#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pgalka0/linear-axi.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pgalka0/linear-axi/issues"
+  },
+  "bin": {
+    "linear-axi": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skills"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "npm run build && npm test",
+    "bench": "npm run build && tsx bench/matrix.ts",
+    "bench:check": "tsx bench/selfcheck.ts",
+    "bench:report": "tsx bench/report.ts"
+  },
+  "dependencies": {
+    "@linear/sdk": "^88.1.0",
+    "@toon-format/toon": "^2.3.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
