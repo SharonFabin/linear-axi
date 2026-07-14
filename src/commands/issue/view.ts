@@ -35,6 +35,8 @@ interface IssueDetail {
   state: { name: string } | null;
   assignee: { displayName: string } | null;
   team: { key: string } | null;
+  project: { name: string } | null;
+  projectMilestone: { name: string } | null;
   labels: { nodes: { name: string }[] };
   comments: { nodes: { id: string }[] };
   children: { nodes: { identifier: string }[] };
@@ -68,6 +70,8 @@ export async function issueView(argv: string[]): Promise<number> {
     assignee: issue.assignee?.displayName ?? "-",
     priority: issue.priorityLabel,
     team: issue.team?.key ?? "-",
+    project: issue.project?.name ?? "-",
+    milestone: issue.projectMilestone?.name ?? "-",
     labels: labels.length > 0 ? labels.join(", ") : "-",
     comments: issue.comments.nodes.length,
     "sub-issues": issue.children.nodes.length,
@@ -102,6 +106,7 @@ const VIEW_QUERY = `query($id:String!){
   issue(id:$id){
     identifier title description priorityLabel url updatedAt
     state{ name } assignee{ displayName } team{ key }
+    project{ name } projectMilestone{ name }
     labels{ nodes{ name } }
     comments{ nodes{ id } }
     children{ nodes{ identifier } }

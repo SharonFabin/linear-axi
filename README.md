@@ -76,23 +76,45 @@ export LINEAR_AXI_DEFAULT_TEAM=ENG   # optional; lets you omit --team
 
 ```
 linear-axi                       home view: your open issues + next steps
-linear-axi issue list [flags]    --assignee --state --team --query --limit --fields
-linear-axi issue view <id>       [--full]
-linear-axi issue create          --title (req) [--team --description --priority
-                                 --assignee --state --label --parent --comment]
-linear-axi issue update <id>     [--title --state --assignee --priority --label
-                                 --description --comment]
+linear-axi issue list [flags]    --assignee --state --team --project --milestone
+                                 --query --in --limit --fields
+linear-axi issue view <id>       [--full]   (shows project + milestone)
+linear-axi issue create          --title (req) [--team --description[-file] --priority
+                                 --assignee --state --label --parent --comment[-file]]
+linear-axi issue update <id...>  [--title --state --assignee --priority --label
+                                 --description[-file] --comment[-file]]   (accepts many ids)
 linear-axi issue comment <id>    [--body "..."]   (omit --body to list comments)
+linear-axi team list             team keys, names, and project counts
+linear-axi milestone list        --project <p>: a project's milestones
 linear-axi setup auth            save your API key (works from any directory)
 linear-axi setup hooks           install ambient-context session hooks
 ```
 
 Combined operations keep round-trips low - one call can change status, assignee,
-and add a comment:
+and add a comment, and one call can batch the same change across several ids:
 
 ```bash
 linear-axi issue update ENG-431 --state "In Progress" --assignee @me --comment "started"
+linear-axi issue update ENG-1 ENG-2 ENG-3 --state Done
 linear-axi issue create --title "Fix login" --priority high --comment "repro attached"
+```
+
+`--query` searches title + description case-insensitively; comma-separated terms
+match any (OR), and `--in title,description,comments` controls the scope. Long or
+structured bodies can come from a file (or stdin with `-`) to avoid shell escaping:
+
+```bash
+linear-axi issue list --query "oauth,sso,login" --fields priority,project
+linear-axi issue create --title "Spec" --description-file ./spec.md
+```
+
+Milestone-scoped work is first-class: `milestone list --project "<p>"` names a
+project's milestones, `issue list --milestone "<name>"` lists a milestone's issues,
+and `milestone`/`project` are both `--fields` columns and appear in `issue view`.
+
+```bash
+linear-axi milestone list --project "Mobile app"
+linear-axi issue list --milestone "Milestone 3" --fields milestone,project
 ```
 
 Every subcommand has a concise `--help`. Errors and their fixes print to stdout

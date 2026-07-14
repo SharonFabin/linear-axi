@@ -1,8 +1,12 @@
 import { describe, it, expect } from "vitest";
+import { writeFileSync, mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { parseArgs } from "../src/lib/args.js";
 import { truncate } from "../src/lib/truncate.js";
+import { resolveBody } from "../src/lib/input.js";
 import { toon, renderHelp } from "../src/output/toon.js";
-import { priorityToNumber, splitList } from "../src/linear/resolve.js";
+import { priorityToNumber, splitList, isUuid } from "../src/linear/resolve.js";
 
 const SCHEMA = {
   state: { type: "string" as const, description: "" },
@@ -72,6 +76,30 @@ describe("toon output", () => {
   });
 });
 
+describe("resolveBody (flag or file)", () => {
+  it("returns the inline value when no file is given", () => {
+    expect(resolveBody("hi", undefined, "description")).toBe("hi");
+    expect(resolveBody(undefined, undefined, "description")).toBeUndefined();
+  });
+
+  it("reads the body from a file", () => {
+    const dir = mkdtempSync(join(tmpdir(), "axi-"));
+    const p = join(dir, "body.md");
+    writeFileSync(p, "from file");
+    expect(resolveBody(undefined, p, "description")).toBe("from file");
+  });
+
+  it("rejects passing both the flag and the file with exit 2", () => {
+    try {
+      resolveBody("a", "b", "description");
+      throw new Error("should throw");
+    } catch (e: any) {
+      expect(e.exitCode).toBe(2);
+      expect(e.message).toContain("not both");
+    }
+  });
+});
+
 describe("resolve helpers", () => {
   it("maps priority labels to Linear numbers", () => {
     expect(priorityToNumber("urgent")).toBe(1);
@@ -91,5 +119,11 @@ describe("resolve helpers", () => {
   it("splits and trims comma lists, dropping empties", () => {
     expect(splitList("Bug, Improvement ,, Feature")).toEqual(["Bug", "Improvement", "Feature"]);
     expect(splitList(undefined)).toEqual([]);
+  });
+
+  it("distinguishes a UUID from a human name", () => {
+    expect(isUuid("92b5fa12-7345-477b-a949-762e24500233")).toBe(true);
+    expect(isUuid("Milestone 3")).toBe(false);
+    expect(isUuid("")).toBe(false);
   });
 });

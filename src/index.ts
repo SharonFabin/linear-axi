@@ -13,6 +13,8 @@ import { issueView } from "./commands/issue/view.js";
 import { issueCreate } from "./commands/issue/create.js";
 import { issueUpdate } from "./commands/issue/update.js";
 import { issueComment } from "./commands/issue/comment.js";
+import { teamList } from "./commands/team/list.js";
+import { milestoneList } from "./commands/milestone/list.js";
 import { setupHooks } from "./setup/hooks.js";
 import { setupAuth } from "./setup/auth.js";
 
@@ -30,11 +32,31 @@ async function main(): Promise<number> {
   }
 
   if (cmd === "issue") return routeIssue(rest);
+  if (cmd === "team") return routeTeam(rest);
+  if (cmd === "milestone") return routeMilestone(rest);
   if (cmd === "setup") return routeSetup(rest);
 
   throw new AxiError(`unknown command \`${cmd}\``, {
     exitCode: 2,
-    help: ["valid commands: issue (list|view|create|update|comment), setup (auth|hooks)", "Run `linear-axi --help`"],
+    help: ["valid commands: issue (list|view|create|update|comment), team (list), milestone (list), setup (auth|hooks)", "Run `linear-axi --help`"],
+  });
+}
+
+async function routeTeam(argv: string[]): Promise<number> {
+  const [sub, ...rest] = argv;
+  if (sub === "list" || sub === undefined) return teamList(rest);
+  throw new AxiError(`unknown subcommand \`team ${sub}\``, {
+    exitCode: 2,
+    help: ["valid: linear-axi team list"],
+  });
+}
+
+async function routeMilestone(argv: string[]): Promise<number> {
+  const [sub, ...rest] = argv;
+  if (sub === "list" || sub === undefined) return milestoneList(rest);
+  throw new AxiError(`unknown subcommand \`milestone ${sub}\``, {
+    exitCode: 2,
+    help: ["valid: linear-axi milestone list --project <p>"],
   });
 }
 
@@ -163,6 +185,8 @@ Usage:
   linear-axi issue create ...      create an issue
   linear-axi issue update <id> ... update an issue (idempotent)
   linear-axi issue comment <id> .. add or list comments
+  linear-axi team list             list team keys, names, and project counts
+  linear-axi milestone list ...    list a project's milestones (--project <p>)
   linear-axi setup auth ...        save your API key (works from any directory)
   linear-axi setup hooks           install ambient-context session hooks
 

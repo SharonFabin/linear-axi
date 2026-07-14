@@ -24,6 +24,9 @@ Linear tasks in fewer turns and tokens than the Linear MCP.
 - Optional: `--team` on `setup auth`, or `LINEAR_AXI_DEFAULT_TEAM`, sets the
   default team so `--team` can be omitted.
 - Invoke without a global install: `npx -y @pgalka0/linear-axi <command>`.
+- If `linear-axi` is already on your `PATH` (global install or a `setup hooks`
+  run), call it directly as `linear-axi <command>` to skip the ~1-2s `npx`
+  cold-start on every call. The home view prints the resolved `bin:` path.
 
 ## When to use
 
@@ -38,33 +41,42 @@ Linear tasks in fewer turns and tokens than the Linear MCP.
    ```
    npx -y @pgalka0/linear-axi
    ```
-2. Narrow down with `issue list`; every list ends with `count:` and next-step hints:
+2. Narrow down with `issue list`; every list ends with `count:` and next-step hints.
+   `--query` searches title + description by default; pass comma-separated terms
+   to match any (OR), so one "did we build this?" audit call covers several synonyms:
    ```
    npx -y @pgalka0/linear-axi issue list --assignee @me --state open
-   npx -y @pgalka0/linear-axi issue list --query "oauth" --fields priority,updated
+   npx -y @pgalka0/linear-axi issue list --query "oauth,sso,login" --fields priority,project
+   npx -y @pgalka0/linear-axi issue list --query "deploy" --in title,comments
    ```
 3. Open one issue for full detail (description is truncated; add `--full` for all of it):
    ```
    npx -y @pgalka0/linear-axi issue view TEAM-123
    ```
-4. Mutate. Combine operations to save turns - one call can set status, assignee, and comment:
+4. Mutate. Combine operations to save turns - one call can set status, assignee, and
+   comment; several ids batch the same change in one call:
    ```
    npx -y @pgalka0/linear-axi issue update TEAM-123 --state "In Progress" --assignee @me --comment "started"
-   npx -y @pgalka0/linear-axi issue create --title "Fix login" --priority high --comment "repro attached"
+   npx -y @pgalka0/linear-axi issue update TEAM-1 TEAM-2 TEAM-3 --state Done
+   npx -y @pgalka0/linear-axi issue create --title "Spec" --description-file ./spec.md
    ```
 5. Discover any subcommand's flags with `--help`; it prints a concise reference, not a manual.
+   Use `team list` to discover team keys and how many projects each team holds.
 
 ## Commands
 
 ```
 linear-axi                       home view: your open issues + next steps
-linear-axi issue list [flags]    --assignee --state --team --query --limit --fields
-linear-axi issue view <id>       [--full]
-linear-axi issue create          --title (req) --team --description --priority
-                                 --assignee --state --label --parent --comment
-linear-axi issue update <id>     --title --state --assignee --priority --label
-                                 --description --comment
+linear-axi issue list [flags]    --assignee --state --team --project --milestone
+                                 --query --in --limit --fields
+linear-axi issue view <id>       [--full]   (shows project + milestone)
+linear-axi issue create          --title (req) --team --description[-file] --priority
+                                 --assignee --state --label --parent --comment[-file]
+linear-axi issue update <id...>  --title --state --assignee --priority --label
+                                 --description[-file] --comment[-file]  (accepts many ids)
 linear-axi issue comment <id>    [--body "..."]   (omit --body to list comments)
+linear-axi team list             team keys, names, and project counts
+linear-axi milestone list        --project <p>: a project's milestones
 linear-axi setup auth            save API key/team to config (works anywhere)
 linear-axi setup hooks           install ambient-context session hooks
 ```
@@ -76,5 +88,11 @@ linear-axi setup hooks           install ambient-context session hooks
 - `--assignee` accepts `@me`, a name/email, or `none` (unassigned). `--state` accepts `open`, `all`, `done`, `canceled`, or an exact state name.
 - Mutations are idempotent: setting a value that already holds is a no-op with exit code 0.
 - Prefer combined calls: `issue update ... --comment` and `issue create ... --comment` avoid a second round-trip.
+- Batch: `issue update` accepts several ids at once (`update A-1 A-2 --state Done`); each row reports its own result and a bad id fails only that row (exit 1 overall).
+- Search scope: `--query` matches title + description by default. Widen or narrow with `--in title,description,comments`; comma-separated terms are OR'd.
+- Shared teams: use `team list` to see project counts, then scope a noisy team with `issue list --team X --project "..."` (or add `project` to `--fields`).
+- Milestone work ("finish milestone 3"): `milestone list --project "<p>"` names a project's milestones, then `issue list --milestone "<name>"` lists that milestone's issues; `milestone` and `project` are both `--fields` columns and appear in `issue view`.
+- Long bodies: pass `--description-file`/`--comment-file <path>` (or `-` for stdin) instead of a shell-escaped `--description`/`--comment`. `create` echoes the saved char count so you can trust it landed.
+- Omitting `--assignee` on create leaves the issue unassigned (not you).
 - Exit codes: 0 success (incl. no-ops), 1 error, 2 usage error. Errors and their fixes print to stdout in the same format as normal output.
 - Run `linear-axi setup hooks` once to load your open issues into every new session automatically.
