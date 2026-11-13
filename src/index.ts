@@ -14,6 +14,10 @@ import { issueCreate } from "./commands/issue/create.js";
 import { issueUpdate } from "./commands/issue/update.js";
 import { issueComment } from "./commands/issue/comment.js";
 import { teamList } from "./commands/team/list.js";
+import { labelList } from "./commands/label/list.js";
+import { labelCreate } from "./commands/label/create.js";
+import { labelUpdate } from "./commands/label/update.js";
+import { labelDelete } from "./commands/label/delete.js";
 import { milestoneList } from "./commands/milestone/list.js";
 import { setupHooks } from "./setup/hooks.js";
 import { setupAuth } from "./setup/auth.js";
@@ -33,12 +37,13 @@ async function main(): Promise<number> {
 
   if (cmd === "issue") return routeIssue(rest);
   if (cmd === "team") return routeTeam(rest);
+  if (cmd === "label") return routeLabel(rest);
   if (cmd === "milestone") return routeMilestone(rest);
   if (cmd === "setup") return routeSetup(rest);
 
   throw new AxiError(`unknown command \`${cmd}\``, {
     exitCode: 2,
-    help: ["valid commands: issue (list|view|create|update|comment), team (list), milestone (list), setup (auth|hooks)", "Run `linear-axi --help`"],
+    help: ["valid commands: issue (list|view|create|update|comment), team (list), milestone (list), label (list|create|update|delete), setup (auth|hooks)", "Run `linear-axi --help`"],
   });
 }
 
@@ -49,6 +54,44 @@ async function routeTeam(argv: string[]): Promise<number> {
     exitCode: 2,
     help: ["valid: linear-axi team list"],
   });
+}
+
+const LABEL_HELP = `linear-axi label - manage team and workspace labels
+
+Usage:
+  linear-axi label list [--team <key>] [--all]
+  linear-axi label create --name "..." [--color "#RRGGBB"] [--description "..."] [--team <key> | --workspace] [--parent <group>]
+  linear-axi label update <name|id> [--name "..."] [--color "#RRGGBB"] [--description "..."] [--parent <group>|none] [--team <key>]
+  linear-axi label delete <name|id> --yes [--team <key>]
+
+Tag issues without replacing their labels:
+  linear-axi issue update <id> --add-label a,b --remove-label c
+
+Run \`linear-axi label <subcommand> --help\` for details.`;
+
+async function routeLabel(argv: string[]): Promise<number> {
+  const [sub, ...rest] = argv;
+  switch (sub) {
+    case "--help":
+    case "-h":
+    case "help":
+      printLine(LABEL_HELP);
+      return 0;
+    case "list":
+    case undefined:
+      return labelList(rest);
+    case "create":
+      return labelCreate(rest);
+    case "update":
+      return labelUpdate(rest);
+    case "delete":
+      return labelDelete(rest);
+    default:
+      throw new AxiError(`unknown subcommand \`label ${sub}\``, {
+        exitCode: 2,
+        help: ["valid subcommands: label list | create | update | delete"],
+      });
+  }
 }
 
 async function routeMilestone(argv: string[]): Promise<number> {
@@ -186,6 +229,7 @@ Usage:
   linear-axi issue update <id> ... update an issue (idempotent)
   linear-axi issue comment <id> .. add or list comments
   linear-axi team list             list team keys, names, and project counts
+  linear-axi label list|create|update|delete  manage team/workspace labels (see: label --help)
   linear-axi milestone list ...    list a project's milestones (--project <p>)
   linear-axi setup auth ...        save your API key (works from any directory)
   linear-axi setup hooks           install ambient-context session hooks

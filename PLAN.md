@@ -26,19 +26,16 @@ and consistent per-command `--help`.
 
 ## Command surface
 
-`home`, `issue list|view|create|update|comment`, `setup hooks`. Mutations are
-idempotent (no-op with exit 0 when the desired state already holds). Combined
-operations (`update --comment`, `create --comment`) cut multi-step workflows by a
-turn.
+See [README usage](README.md#usage) for the command surface and label semantics.
 
 ## Status
 
 - **Read path** - done: home, `issue list` (filters, aggregate, empty states,
   lenient default team), `issue view` (truncation + derived counts).
-- **Write path** - done: `issue create`, idempotent `issue update`, `issue
-  comment` (add + list). Resolvers for state, assignee, labels, priority.
+- **Write path** - see [README usage](README.md#usage) for supported mutations.
 - **Distribution** - done: generated-quality `SKILL.md`, `setup hooks` for Claude
   Code / Codex / OpenCode, README, MIT license, publishable `package.json`.
+  See [README installation](README.md#install) for team distribution.
 - **Benchmark** - done: `bench/` harness (4 conditions, 10 tasks, programmatic
   verification). Results below.
 - Unit tests green (`npm test`); typecheck clean.
@@ -69,6 +66,4 @@ Caveat: n=1 per cell is directional; use `BENCH_REPEATS=3-5` for confidence.
 ## Next / not yet done
 
 - Optional: `--project` / `--cycle` filters and fields, `issue archive`.
-- Publication: create the GitHub repo, `npm publish`, then submit a `catalog.yaml`
-  community entry to `kunchenguid/axi` via the `no-mistakes` gate (see
-  `PUBLISHING.md`).
+- Optional npm publication and AXI catalog submission: see [PUBLISHING.md](PUBLISHING.md).

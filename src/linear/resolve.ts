@@ -141,28 +141,6 @@ export async function resolveAssigneeId(value: string): Promise<string | null> {
   return first.id;
 }
 
-/** Resolve label names to ids within a team; unknown names are a usage error. */
-export async function resolveLabelIds(teamId: string, names: string[]): Promise<string[]> {
-  if (names.length === 0) return [];
-  const data = await gql<{ team: { labels: { nodes: { id: string; name: string }[] } } }>(
-    `query($id:String!){ team(id:$id){ labels{ nodes{ id name } } } }`,
-    { id: teamId },
-  );
-  const labels = data.team.labels.nodes;
-  const ids: string[] = [];
-  for (const name of names) {
-    const match = labels.find((l) => l.name.toLowerCase() === name.toLowerCase());
-    if (!match) {
-      throw new AxiError(`label "${name}" not found in team`, {
-        exitCode: 2,
-        help: [`available labels: ${labels.map((l) => l.name).join(", ") || "(none)"}`],
-      });
-    }
-    ids.push(match.id);
-  }
-  return ids;
-}
-
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** True when the string is a Linear UUID (vs a human name), for id-vs-name filters. */

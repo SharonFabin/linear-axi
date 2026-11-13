@@ -2,9 +2,10 @@
 
 An agent-ergonomic CLI for [Linear](https://linear.app), built to the
 **[AXI](https://axi.md) (Agent eXperience Interface)** standard. It wraps the
-Linear GraphQL API and returns compact [TOON](https://toonformat.dev/) output
-with next-step hints, so an AI agent completes Linear tasks in **fewer turns and
-tokens** than the Linear MCP - at the same success rate.
+Linear GraphQL API to manage issues and labels and returns compact
+[TOON](https://toonformat.dev/) output with next-step hints, so an AI agent
+completes Linear tasks in **fewer turns and tokens** than the Linear MCP - at the
+same success rate.
 
 ```
 $ linear-axi
@@ -49,13 +50,15 @@ linear-axi is Pareto-best across every metric.
 
 Requires Node.js 20+.
 
-```bash
-# zero-install (recommended for agents)
-npx -y @pgalka0/linear-axi
+This team fork of
+[pgalka0/linear-axi](https://github.com/pgalka0/linear-axi) installs straight from
+GitHub; the `prepare` script builds `dist/` on install, so no npm publish is needed:
 
-# or global (the installed command is `linear-axi`)
-npm install -g @pgalka0/linear-axi
+```bash
+npm install -g github:SharonFabin/linear-axi
 ```
+
+The installed command is `linear-axi`.
 
 Set a personal API key (Linear -> Settings -> Security & access -> Personal API keys).
 Save it once so it works from any directory:
@@ -82,13 +85,39 @@ linear-axi issue view <id>       [--full]   (shows project + milestone)
 linear-axi issue create          --title (req) [--team --description[-file] --priority
                                  --assignee --state --label --parent --comment[-file]]
 linear-axi issue update <id...>  [--title --state --assignee --priority --label
+                                 --add-label --remove-label
                                  --description[-file] --comment[-file]]   (accepts many ids)
 linear-axi issue comment <id>    [--body "..."]   (omit --body to list comments)
 linear-axi team list             team keys, names, and project counts
+linear-axi label list            [--team <key>] [--all]  team + workspace labels, group, color
+linear-axi label create          --name (req) [--color --description --team|--workspace --parent]
+linear-axi label update <n|id>   [--name --color --description --parent <group|none> --team]
+linear-axi label delete <n|id>   --yes (required) [--team]
 linear-axi milestone list        --project <p>: a project's milestones
 linear-axi setup auth            save your API key (works from any directory)
 linear-axi setup hooks           install ambient-context session hooks
 ```
+
+On `issue create`, `--label a,b` sets the initial labels. On `issue update`, it
+replaces the whole label list; use `--label ""` to clear it. To change a few labels
+and keep the rest, use `issue update <id> --add-label a,b` / `--remove-label c` (not
+combinable with `--label`). The same name cannot appear in both add and remove.
+Issue label names match case-insensitively, preferring the issue's team over
+workspace labels; unknown or ambiguous names are errors.
+
+`label list` includes the selected or configured default team's labels plus
+workspace labels; without a valid default it lists all teams. `--all` lists all
+teams regardless of the default. `label create` needs an explicit or configured
+team, or `--workspace` to create a workspace label. An existing name in that scope
+is a no-op; use `label update` to change its fields.
+
+`label update` and `label delete` match a name or id across all teams and workspace
+labels unless `--team` is explicit. Ambiguous names error with candidates; use
+`--team` for a team label or the id for an exact match. `--team` filters to that
+team only, excluding workspace labels. Colors require the quoted `"#RRGGBB"`
+form. `--parent` selects an existing group by name or id in the label's own scope;
+`label update <name|id> --parent none` removes the grouping.
+`label delete <name|id> --yes` deletes the label and removes it from every issue.
 
 Combined operations keep round-trips low - one call can change status, assignee,
 and add a comment, and one call can batch the same change across several ids:

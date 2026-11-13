@@ -13,10 +13,10 @@ import {
   priorityToNumber,
   resolveAssigneeId,
   resolveStateId,
-  resolveLabelIds,
   resolveIssueRef,
   splitList,
 } from "../../linear/resolve.js";
+import { resolveLabelIds } from "../../linear/labels.js";
 
 const SCHEMA: FlagSchema = {
   title: { type: "string", description: "issue title (required)" },
@@ -87,8 +87,8 @@ export async function issueCreate(argv: string[]): Promise<number> {
   if (typeof parsed.flags.state === "string") {
     input.stateId = (await resolveStateId(team.id, parsed.flags.state)).id;
   }
-  const labelNames = splitList(parsed.flags.label as string | undefined);
-  if (labelNames.length > 0) input.labelIds = await resolveLabelIds(team.id, labelNames);
+  const labelIds = await resolveLabelIds(team.id, splitList(parsed.flags.label as string | undefined));
+  if (labelIds.length > 0) input.labelIds = labelIds;
   if (typeof parsed.flags.parent === "string") {
     input.parentId = (await resolveIssueRef(parsed.flags.parent)).uuid;
   }
