@@ -1,5 +1,8 @@
 # Publishing linear-axi
 
+For team distribution of this fork, use [README installation](README.md#install).
+The procedures below cover optional npm publication and AXI catalog submission.
+
 Two independent tracks: **(A)** ship linear-axi as its own package/repo, and
 **(B)** get it listed in the AXI catalog on [axi.md](https://axi.md). Track B
 references the URL from track A, so do A first.

@@ -2,9 +2,10 @@
 
 An agent-ergonomic CLI for [Linear](https://linear.app), built to the
 **[AXI](https://axi.md) (Agent eXperience Interface)** standard. It wraps the
-Linear GraphQL API and returns compact [TOON](https://toonformat.dev/) output
-with next-step hints, so an AI agent completes Linear tasks in **fewer turns and
-tokens** than the Linear MCP - at the same success rate.
+Linear GraphQL API to manage issues and labels and returns compact
+[TOON](https://toonformat.dev/) output with next-step hints, so an AI agent
+completes Linear tasks in **fewer turns and tokens** than the Linear MCP - at the
+same success rate.
 
 ```
 $ linear-axi
@@ -49,21 +50,15 @@ linear-axi is Pareto-best across every metric.
 
 Requires Node.js 20+.
 
-```bash
-# zero-install (recommended for agents)
-npx -y @pgalka0/linear-axi
-
-# or global (the installed command is `linear-axi`)
-npm install -g @pgalka0/linear-axi
-```
-
-**Team fork (adds label management):** this fork of
+This team fork of
 [pgalka0/linear-axi](https://github.com/pgalka0/linear-axi) installs straight from
 GitHub; the `prepare` script builds `dist/` on install, so no npm publish is needed:
 
 ```bash
 npm install -g github:SharonFabin/linear-axi
 ```
+
+The installed command is `linear-axi`.
 
 Set a personal API key (Linear -> Settings -> Security & access -> Personal API keys).
 Save it once so it works from any directory:
@@ -103,11 +98,26 @@ linear-axi setup auth            save your API key (works from any directory)
 linear-axi setup hooks           install ambient-context session hooks
 ```
 
-`--label a,b` replaces an issue's whole label list. To change one label and keep
-the rest, use `--add-label a,b` / `--remove-label c` (not combinable with `--label`).
-Label names resolve team label first, then workspace; a label name shared by
-several teams makes `label update`/`delete` error with the candidates (use `--team`
-or the id).
+On `issue create`, `--label a,b` sets the initial labels. On `issue update`, it
+replaces the whole label list; use `--label ""` to clear it. To change a few labels
+and keep the rest, use `issue update <id> --add-label a,b` / `--remove-label c` (not
+combinable with `--label`). The same name cannot appear in both add and remove.
+Issue label names match case-insensitively, preferring the issue's team over
+workspace labels; unknown or ambiguous names are errors.
+
+`label list` includes the selected or configured default team's labels plus
+workspace labels; without a valid default it lists all teams. `--all` lists all
+teams regardless of the default. `label create` needs an explicit or configured
+team, or `--workspace` to create a workspace label. An existing name in that scope
+is a no-op; use `label update` to change its fields.
+
+`label update` and `label delete` match a name or id across all teams and workspace
+labels unless `--team` is explicit. Ambiguous names error with candidates; use
+`--team` for a team label or the id for an exact match. `--team` filters to that
+team only, excluding workspace labels. Colors require the quoted `"#RRGGBB"`
+form. `--parent` selects an existing group by name or id in the label's own scope;
+`label update <name|id> --parent none` removes the grouping.
+`label delete <name|id> --yes` deletes the label and removes it from every issue.
 
 Combined operations keep round-trips low - one call can change status, assignee,
 and add a comment, and one call can batch the same change across several ids:
