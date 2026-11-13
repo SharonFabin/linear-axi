@@ -57,6 +57,14 @@ npx -y @pgalka0/linear-axi
 npm install -g @pgalka0/linear-axi
 ```
 
+**Team fork (adds label management):** this fork of
+[pgalka0/linear-axi](https://github.com/pgalka0/linear-axi) installs straight from
+GitHub; the `prepare` script builds `dist/` on install, so no npm publish is needed:
+
+```bash
+npm install -g github:SharonFabin/linear-axi
+```
+
 Set a personal API key (Linear -> Settings -> Security & access -> Personal API keys).
 Save it once so it works from any directory:
 
@@ -80,15 +88,26 @@ linear-axi issue list [flags]    --assignee --state --team --project --milestone
                                  --query --in --limit --fields
 linear-axi issue view <id>       [--full]   (shows project + milestone)
 linear-axi issue create          --title (req) [--team --description[-file] --priority
-                                 --assignee --state --label --parent --comment[-file]]
+                                 --assignee --state --label --add-label --parent --comment[-file]]
 linear-axi issue update <id...>  [--title --state --assignee --priority --label
+                                 --add-label --remove-label
                                  --description[-file] --comment[-file]]   (accepts many ids)
 linear-axi issue comment <id>    [--body "..."]   (omit --body to list comments)
 linear-axi team list             team keys, names, and project counts
+linear-axi label list            [--team <key>] [--all]  team + workspace labels, group, color
+linear-axi label create          --name (req) [--color --description --team|--workspace --parent]
+linear-axi label update <n|id>   [--name --color --description --parent <group|none> --team]
+linear-axi label delete <n|id>   --yes (required) [--team]
 linear-axi milestone list        --project <p>: a project's milestones
 linear-axi setup auth            save your API key (works from any directory)
 linear-axi setup hooks           install ambient-context session hooks
 ```
+
+`--label a,b` replaces an issue's whole label list. To change one label and keep
+the rest, use `--add-label a,b` / `--remove-label c` (not combinable with `--label`).
+Label names resolve team label first, then workspace; a label name shared by
+several teams makes `label update`/`delete` error with the candidates (use `--team`
+or the id).
 
 Combined operations keep round-trips low - one call can change status, assignee,
 and add a comment, and one call can batch the same change across several ids:

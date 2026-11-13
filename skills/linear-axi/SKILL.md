@@ -1,6 +1,6 @@
 ---
 name: linear-axi
-description: Manage Linear issues (list, view, create, update, comment) from the shell with token-efficient TOON output. Use for any Linear task run via CLI.
+description: Manage Linear issues (list, view, create, update, comment) and labels from the shell with token-efficient TOON output. Use for any Linear task run via CLI.
 user-invocable: false
 author: Piotr Galka
 metadata:
@@ -71,11 +71,16 @@ linear-axi issue list [flags]    --assignee --state --team --project --milestone
                                  --query --in --limit --fields
 linear-axi issue view <id>       [--full]   (shows project + milestone)
 linear-axi issue create          --title (req) --team --description[-file] --priority
-                                 --assignee --state --label --parent --comment[-file]
+                                 --assignee --state --label --add-label --parent --comment[-file]
 linear-axi issue update <id...>  --title --state --assignee --priority --label
+                                 --add-label --remove-label
                                  --description[-file] --comment[-file]  (accepts many ids)
 linear-axi issue comment <id>    [--body "..."]   (omit --body to list comments)
 linear-axi team list             team keys, names, and project counts
+linear-axi label list            --team --all  (team + workspace labels, group, color)
+linear-axi label create          --name (req) --color --description --team|--workspace --parent
+linear-axi label update <n|id>   --name --color --description --parent <group|none> --team
+linear-axi label delete <n|id>   --yes (required) --team
 linear-axi milestone list        --project <p>: a project's milestones
 linear-axi setup auth            save API key/team to config (works anywhere)
 linear-axi setup hooks           install ambient-context session hooks
@@ -93,6 +98,8 @@ linear-axi setup hooks           install ambient-context session hooks
 - Shared teams: use `team list` to see project counts, then scope a noisy team with `issue list --team X --project "..."` (or add `project` to `--fields`).
 - Milestone work ("finish milestone 3"): `milestone list --project "<p>"` names a project's milestones, then `issue list --milestone "<name>"` lists that milestone's issues; `milestone` and `project` are both `--fields` columns and appear in `issue view`.
 - Long bodies: pass `--description-file`/`--comment-file <path>` (or `-` for stdin) instead of a shell-escaped `--description`/`--comment`. `create` echoes the saved char count so you can trust it landed.
+- Labels: `--label a,b` REPLACES all labels; use `--add-label a,b` / `--remove-label c` to change a few and keep the rest (cannot combine with `--label`). Names resolve team label first, then workspace; unknown names are an error.
+- `label update/delete` take a name or id; a name used in several teams errors with the candidates, so add `--team <key>` or pass the id. `label delete` needs `--yes`.
 - Omitting `--assignee` on create leaves the issue unassigned (not you).
 - Exit codes: 0 success (incl. no-ops), 1 error, 2 usage error. Errors and their fixes print to stdout in the same format as normal output.
 - Run `linear-axi setup hooks` once to load your open issues into every new session automatically.

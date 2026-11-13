@@ -14,10 +14,10 @@ import {
   PRIORITY_LABELS,
   resolveAssigneeId,
   resolveStateId,
-  resolveLabelIds,
   resolveIssueRef,
   splitList,
 } from "../../linear/resolve.js";
+import { parseLabelFlags, resolveLabelIds, resolveLabelOps } from "../../linear/labels.js";
 
 const SCHEMA: FlagSchema = {
   title: { type: "string", description: "new title" },
@@ -27,6 +27,8 @@ const SCHEMA: FlagSchema = {
   assignee: { type: "string", description: "@me | <name/email> | none" },
   priority: { type: "string", description: "none | urgent | high | medium | low" },
   label: { type: "string", description: "label names, comma-separated (replaces labels)" },
+  "add-label": { type: "string", description: "label names to add, comma-separated (keeps the others)" },
+  "remove-label": { type: "string", description: "label names to remove, comma-separated (keeps the others)" },
   comment: { type: "string", description: "also add a comment in the same call" },
   "comment-file": { type: "string", description: "read the comment from a file, or - for stdin" },
 };
@@ -44,13 +46,16 @@ Flags:
   --assignee <a>        @me | <name/email> | none
   --priority <p>        none | urgent | high | medium | low
   --label a,b           replace labels with these names
+  --add-label a,b       add these labels, keep the rest (not with --label)
+  --remove-label a,b    remove these labels, keep the rest (not with --label)
   --comment "..."       add a comment as part of this update (one call)
   --comment-file <p>    read the comment from a file, or - for stdin
 
 Examples:
   linear-axi issue update MYT-42 --state Done
   linear-axi issue update MYT-42 --state "In Progress" --assignee @me --comment "started"
-  linear-axi issue update MYT-1 MYT-2 MYT-3 --state Done`;
+  linear-axi issue update MYT-1 MYT-2 MYT-3 --state Done
+  linear-axi issue update MYT-42 --add-label Bug --remove-label Triage`;
 
 /** Inputs resolved once and applied to every id in a batch. */
 interface UpdateOp {
@@ -60,6 +65,8 @@ interface UpdateOp {
   assignee?: { id: string | null };
   priority?: number;
   labels?: string[];
+  addLabels: string[];
+  removeLabels: string[];
   comment?: string;
 }
 
@@ -105,7 +112,8 @@ export async function issueUpdate(argv: string[]): Promise<number> {
     ]);
   }
 
-  const op: UpdateOp = {};
+  const lf = parseLabelFlags(parsed.flags, splitList);
+  const op: UpdateOp = { addLabels: lf.add, removeLabels: lf.remove };
   if (title !== undefined) op.title = title;
   if (description !== undefined) op.description = description;
   if (typeof parsed.flags.state === "string") op.state = parsed.flags.state;
@@ -113,7 +121,7 @@ export async function issueUpdate(argv: string[]): Promise<number> {
   if (typeof parsed.flags.assignee === "string") {
     op.assignee = { id: await resolveAssigneeId(parsed.flags.assignee) };
   }
-  if (typeof parsed.flags.label === "string") op.labels = splitList(parsed.flags.label);
+  if (lf.replace) op.labels = lf.replace;
 
   const hasFieldOp =
     op.title !== undefined ||
@@ -121,7 +129,9 @@ export async function issueUpdate(argv: string[]): Promise<number> {
     op.state !== undefined ||
     op.assignee !== undefined ||
     op.priority !== undefined ||
-    op.labels !== undefined;
+    op.labels !== undefined ||
+    op.addLabels.length > 0 ||
+    op.removeLabels.length > 0;
   if (!hasFieldOp && comment === undefined) {
     throw usageError("nothing to update - pass at least one field", [
       "e.g. linear-axi issue update " + ids[0] + " --state Done",
@@ -218,6 +228,18 @@ async function updateOne(id: string, op: UpdateOp, comment: string | undefined):
     const same = ids.length === current.size && ids.every((i) => current.has(i));
     if (!same) {
       input.labelIds = ids;
+      changes.push("labels");
+    } else noops.push("labels already set");
+  }
+
+  if (op.addLabels.length > 0 || op.removeLabels.length > 0) {
+    const { addIds, removeIds } = await resolveLabelOps(ref.team.id, op.addLabels, op.removeLabels);
+    const current = new Set(ref.labels.map((l) => l.id));
+    const next = new Set(current);
+    addIds.forEach((i) => next.add(i));
+    removeIds.forEach((i) => next.delete(i));
+    if (next.size !== current.size || [...next].some((i) => !current.has(i))) {
+      input.labelIds = [...next];
       changes.push("labels");
     } else noops.push("labels already set");
   }
