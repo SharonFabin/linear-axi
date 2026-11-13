@@ -88,7 +88,7 @@ linear-axi issue list [flags]    --assignee --state --team --project --milestone
                                  --query --in --limit --fields
 linear-axi issue view <id>       [--full]   (shows project + milestone)
 linear-axi issue create          --title (req) [--team --description[-file] --priority
-                                 --assignee --state --label --add-label --parent --comment[-file]]
+                                 --assignee --state --label --parent --comment[-file]]
 linear-axi issue update <id...>  [--title --state --assignee --priority --label
                                  --add-label --remove-label
                                  --description[-file] --comment[-file]]   (accepts many ids)

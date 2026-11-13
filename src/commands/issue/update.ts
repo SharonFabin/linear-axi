@@ -234,14 +234,9 @@ async function updateOne(id: string, op: UpdateOp, comment: string | undefined):
 
   if (op.addLabels.length > 0 || op.removeLabels.length > 0) {
     const { addIds, removeIds } = await resolveLabelOps(ref.team.id, op.addLabels, op.removeLabels);
-    const current = new Set(ref.labels.map((l) => l.id));
-    const next = new Set(current);
-    addIds.forEach((i) => next.add(i));
-    removeIds.forEach((i) => next.delete(i));
-    if (next.size !== current.size || [...next].some((i) => !current.has(i))) {
-      input.labelIds = [...next];
-      changes.push("labels");
-    } else noops.push("labels already set");
+    if (addIds.length > 0) input.addedLabelIds = addIds;
+    if (removeIds.length > 0) input.removedLabelIds = removeIds;
+    changes.push("labels");
   }
 
   let issue: UpdatedIssue | null = null;

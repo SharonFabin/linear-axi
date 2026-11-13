@@ -18,15 +18,14 @@ Linear tasks in fewer turns and tokens than the Linear MCP.
 
 ## Setup
 
-- Auth (any one): `npx -y @pgalka0/linear-axi setup auth --key lin_api_...` to save it to
+- Install the label-capable team fork: `npm install -g github:SharonFabin/linear-axi`.
+- Auth (any one): `linear-axi setup auth --key lin_api_...` to save it to
   `~/.config/linear-axi/config.json`, or set `LINEAR_API_KEY`, or a `.env` in the
   working directory. Env takes precedence over the saved config.
 - Optional: `--team` on `setup auth`, or `LINEAR_AXI_DEFAULT_TEAM`, sets the
   default team so `--team` can be omitted.
-- Invoke without a global install: `npx -y @pgalka0/linear-axi <command>`.
-- If `linear-axi` is already on your `PATH` (global install or a `setup hooks`
-  run), call it directly as `linear-axi <command>` to skip the ~1-2s `npx`
-  cold-start on every call. The home view prints the resolved `bin:` path.
+- Invoke the installed fork as `linear-axi <command>`.
+  The home view prints the resolved `bin:` path.
 
 ## When to use
 
@@ -39,26 +38,26 @@ Linear tasks in fewer turns and tokens than the Linear MCP.
 
 1. Run with no arguments to see live context (your open issues) and discover commands:
    ```
-   npx -y @pgalka0/linear-axi
+   linear-axi
    ```
 2. Narrow down with `issue list`; every list ends with `count:` and next-step hints.
    `--query` searches title + description by default; pass comma-separated terms
    to match any (OR), so one "did we build this?" audit call covers several synonyms:
    ```
-   npx -y @pgalka0/linear-axi issue list --assignee @me --state open
-   npx -y @pgalka0/linear-axi issue list --query "oauth,sso,login" --fields priority,project
-   npx -y @pgalka0/linear-axi issue list --query "deploy" --in title,comments
+   linear-axi issue list --assignee @me --state open
+   linear-axi issue list --query "oauth,sso,login" --fields priority,project
+   linear-axi issue list --query "deploy" --in title,comments
    ```
 3. Open one issue for full detail (description is truncated; add `--full` for all of it):
    ```
-   npx -y @pgalka0/linear-axi issue view TEAM-123
+   linear-axi issue view TEAM-123
    ```
 4. Mutate. Combine operations to save turns - one call can set status, assignee, and
    comment; several ids batch the same change in one call:
    ```
-   npx -y @pgalka0/linear-axi issue update TEAM-123 --state "In Progress" --assignee @me --comment "started"
-   npx -y @pgalka0/linear-axi issue update TEAM-1 TEAM-2 TEAM-3 --state Done
-   npx -y @pgalka0/linear-axi issue create --title "Spec" --description-file ./spec.md
+   linear-axi issue update TEAM-123 --state "In Progress" --assignee @me --comment "started"
+   linear-axi issue update TEAM-1 TEAM-2 TEAM-3 --state Done
+   linear-axi issue create --title "Spec" --description-file ./spec.md
    ```
 5. Discover any subcommand's flags with `--help`; it prints a concise reference, not a manual.
    Use `team list` to discover team keys and how many projects each team holds.
@@ -71,7 +70,7 @@ linear-axi issue list [flags]    --assignee --state --team --project --milestone
                                  --query --in --limit --fields
 linear-axi issue view <id>       [--full]   (shows project + milestone)
 linear-axi issue create          --title (req) --team --description[-file] --priority
-                                 --assignee --state --label --add-label --parent --comment[-file]
+                                 --assignee --state --label --parent --comment[-file]
 linear-axi issue update <id...>  --title --state --assignee --priority --label
                                  --add-label --remove-label
                                  --description[-file] --comment[-file]  (accepts many ids)

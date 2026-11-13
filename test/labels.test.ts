@@ -10,6 +10,7 @@ import { labelCreate } from "../src/commands/label/create.js";
 import { labelUpdate } from "../src/commands/label/update.js";
 import { labelDelete } from "../src/commands/label/delete.js";
 import { labelList } from "../src/commands/label/list.js";
+import { issueCreate } from "../src/commands/issue/create.js";
 import { parseLabelFlags, normalizeColor, resolveLabelIds } from "../src/linear/labels.js";
 import { splitList } from "../src/linear/resolve.js";
 
@@ -47,7 +48,8 @@ describe("label flags", () => {
     expect(() => parseLabelFlags({ "add-label": "Bug", "remove-label": "bug" }, splitList)).toThrowError(/both/);
   });
   it("validates colors", () => {
-    expect(normalizeColor("EB5757")).toBe("#eb5757");
+    expect(normalizeColor("#EB5757")).toBe("#eb5757");
+    expect(() => normalizeColor("EB5757")).toThrowError(/invalid color/);
     expect(() => normalizeColor("red")).toThrowError(/invalid color/);
   });
   it("resolves team label before workspace, errors on unknown", async () => {
@@ -58,6 +60,10 @@ describe("label flags", () => {
 });
 
 describe("label create", () => {
+  it("rejects colors without # before mutating", async () => {
+    expect((await fail(labelCreate(["--name", "Fresh", "--team", "A", "--color", "abcdef"]))).exitCode).toBe(2);
+    expect(mutations).toHaveLength(0);
+  });
   it("is a no-op when the name exists in that scope", async () => {
     expect(await labelCreate(["--name", "bug", "--team", "A"])).toBe(0);
     expect(mutations).toHaveLength(0);
@@ -74,6 +80,10 @@ describe("label create", () => {
 });
 
 describe("label update", () => {
+  it("rejects colors without # before mutating", async () => {
+    expect((await fail(labelUpdate(["Ops", "--color", "abcdef"]))).exitCode).toBe(2);
+    expect(mutations).toHaveLength(0);
+  });
   it("errors on an ambiguous name listing candidates, --team disambiguates", async () => {
     const e = await fail(labelUpdate(["Bug", "--color", "#ffffff"]));
     expect(e.exitCode).toBe(2);
@@ -117,29 +127,58 @@ describe("label list", () => {
   });
 });
 
+describe("issue create labels", () => {
+  it("uses --label to set initial team and workspace labels", async () => {
+    gql.mockImplementationOnce(async () => ({ issueLabels: { nodes: LABELS, pageInfo: { hasNextPage: false, endCursor: null } } }));
+    gql.mockImplementationOnce(async (query: string, vars: any) => {
+      mutations.push({ query, vars });
+      return { issueCreate: { success: true, issue: { id: "u", identifier: "A-1", title: "New", url: "https://linear.app/issue/A-1", state: null, assignee: null } } };
+    });
+    expect(await issueCreate(["--title", "New", "--team", "A", "--label", "Bug,Ops"])).toBe(0);
+    expect(mutations[0]!.vars.input).toEqual({ title: "New", teamId: "t-A", labelIds: [U(1), U(3)] });
+  });
+  it("rejects --add-label on creation", async () => {
+    expect((await fail(issueCreate(["--title", "New", "--team", "A", "--add-label", "Bug"]))).exitCode).toBe(2);
+    expect(gql).not.toHaveBeenCalled();
+  });
+});
+
 describe("issue update --add-label / --remove-label", () => {
-  const run = async (args: string[], current: string[]) => {
+  const run = async (args: string[], current: string[], ids = ["A-1"]) => {
     LABELS = [lbl(1, "Bug", "A"), lbl(2, "Triage", "A"), lbl(3, "Ops", null)];
     gql.mockImplementation(async (query: string, vars: any) => {
       if (query.includes("issueLabels(")) return { issueLabels: { nodes: LABELS, pageInfo: { hasNextPage: false, endCursor: null } } };
       if (query.includes("issue(id:")) {
-        return { issue: { id: "u", identifier: "A-1", title: "t", priority: 0, team: { id: "t-A", key: "A" }, state: null, assignee: null, labels: { nodes: current.map((n) => ({ id: U(Number(n)), name: n })) } } };
+        return { issue: { id: "u", identifier: vars.id, title: "t", priority: 0, team: { id: "t-A", key: "A" }, state: null, assignee: null, labels: { nodes: current.map((n) => ({ id: U(Number(n)), name: n })) } } };
       }
       mutations.push({ query, vars });
-      return { issueUpdate: { success: true, issue: { identifier: "A-1", priority: 0, state: null, assignee: null } } };
+      return { issueUpdate: { success: true, issue: { identifier: vars.id, priority: 0, state: null, assignee: null } } };
     });
     const { issueUpdate } = await import("../src/commands/issue/update.js");
-    return issueUpdate(["A-1", ...args]);
+    return issueUpdate([...ids, ...args]);
   };
 
-  it("adds and removes while keeping the others", async () => {
-    await run(["--add-label", "Bug", "--remove-label", "Triage"], ["2", "3"]);
-    expect(mutations[0]!.vars.input.labelIds.sort()).toEqual([U(1), U(3)]);
-  });
-  it("is a no-op when already satisfied", async () => {
+  it.each([["A-1"], ["A-1", "A-2"]].map((ids) => [ids]))(
+    "uses Linear's atomic IssueUpdateInput contract for %j",
+    async (ids) => {
+      for (const [args, input] of [
+        [["--add-label", "Bug"], { addedLabelIds: [U(1)] }],
+        [["--remove-label", "Triage"], { removedLabelIds: [U(2)] }],
+        [["--add-label", "Bug", "--remove-label", "Triage"], { addedLabelIds: [U(1)], removedLabelIds: [U(2)] }],
+      ] as const) {
+        mutations = [];
+        expect(await run([...args], ["2", "3"], ids)).toBe(0);
+        expect(mutations.map((m) => m.vars)).toEqual(ids.map((id) => ({ id, input })));
+      }
+    },
+  );
+  it("sends deltas even when a stale or partial snapshot appears satisfied", async () => {
     await run(["--add-label", "Bug", "--remove-label", "Triage"], ["1"]);
-    expect(mutations).toHaveLength(0);
-    expect(out).toContain("no changes");
+    expect(mutations[0]!.vars.input).toEqual({ addedLabelIds: [U(1)], removedLabelIds: [U(2)] });
+  });
+  it("keeps --label as explicit replacement", async () => {
+    await run(["--label", "Bug"], ["2", "3"]);
+    expect(mutations[0]!.vars.input).toEqual({ labelIds: [U(1)] });
   });
   it("errors on unknown names and on --label combination", async () => {
     expect((await fail(run(["--add-label", "Nope"], []))).exitCode).toBe(2);

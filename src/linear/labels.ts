@@ -55,12 +55,7 @@ function matches(l: LabelNode, ref: string): boolean {
   return isUuid(ref) ? l.id.toLowerCase() === ref.trim().toLowerCase() : l.name.toLowerCase() === ref.toLowerCase();
 }
 
-/**
- * Find one label by name or id. A name that matches several labels (same name
- * in different teams) is an error listing the candidates, unless `preferTeamId`
- * picks a team label over a workspace one.
- */
-export function pickLabel(labels: LabelNode[], ref: string, opts: { preferTeamId?: string } = {}): LabelNode {
+export function pickLabel(labels: LabelNode[], ref: string): LabelNode {
   const found = labels.filter((l) => matches(l, ref));
   if (found.length === 0) {
     throw new AxiError(`label "${ref}" not found`, {
@@ -69,8 +64,6 @@ export function pickLabel(labels: LabelNode[], ref: string, opts: { preferTeamId
     });
   }
   if (found.length === 1) return found[0]!;
-  const preferred = opts.preferTeamId ? found.filter((l) => l.team?.id === opts.preferTeamId) : [];
-  if (preferred.length === 1) return preferred[0]!;
   throw new AxiError(`label "${ref}" is ambiguous (${found.length} matches)`, {
     exitCode: 2,
     help: [
@@ -114,12 +107,10 @@ export async function resolveLabelOps(
   add: string[],
   remove: string[],
 ): Promise<{ addIds: string[]; removeIds: string[] }> {
-  if (add.length + remove.length === 0) return { addIds: [], removeIds: [] };
   const labels = await fetchLabels(teamId);
   return { addIds: resolveFrom(labels, teamId, add), removeIds: resolveFrom(labels, teamId, remove) };
 }
 
-/** Usage checks shared by issue create/update. Returns the parsed lists. */
 export function parseLabelFlags(
   flags: Record<string, string | boolean>,
   splitList: (raw?: string) => string[],
@@ -137,11 +128,9 @@ export function parseLabelFlags(
   return { replace: hasReplace ? splitList(flags.label as string) : undefined, add, remove };
 }
 
-/** Accept `#abc123` or `abc123`; Linear wants `#RRGGBB`. */
 export function normalizeColor(raw: string): string {
-  const c = raw.startsWith("#") ? raw : `#${raw}`;
-  if (!/^#[0-9a-f]{6}$/i.test(c)) {
+  if (!/^#[0-9a-f]{6}$/i.test(raw)) {
     throw usageError(`invalid color "${raw}"`, ['use a hex color like "#5e6ad2"']);
   }
-  return c.toLowerCase();
+  return raw.toLowerCase();
 }

@@ -16,7 +16,7 @@ import {
   resolveIssueRef,
   splitList,
 } from "../../linear/resolve.js";
-import { parseLabelFlags, resolveLabelOps } from "../../linear/labels.js";
+import { resolveLabelIds } from "../../linear/labels.js";
 
 const SCHEMA: FlagSchema = {
   title: { type: "string", description: "issue title (required)" },
@@ -27,7 +27,6 @@ const SCHEMA: FlagSchema = {
   assignee: { type: "string", description: "@me | <name/email> (default: unassigned)" },
   state: { type: "string", description: "workflow state name or keyword (done, todo, ...)" },
   label: { type: "string", description: "label names, comma-separated" },
-  "add-label": { type: "string", description: "label names, comma-separated (same as --label on create)" },
   parent: { type: "string", description: "parent issue id (creates a sub-issue)" },
   comment: { type: "string", description: "add a first comment in the same call" },
   "comment-file": { type: "string", description: "read the first comment from a file, or - for stdin" },
@@ -46,7 +45,6 @@ Flags:
   --assignee <a>        @me | <name/email>  (default: unassigned, not you)
   --state <s>           workflow state name or keyword (done, todo, backlog, ...)
   --label a,b           label names, comma-separated
-  --add-label a,b       label names to add (alias of --label; not with --label)
   --parent <id>         parent issue id (creates a sub-issue)
   --comment "..."       add a first comment in the same call
   --comment-file <p>    read the first comment from a file, or - for stdin
@@ -89,8 +87,7 @@ export async function issueCreate(argv: string[]): Promise<number> {
   if (typeof parsed.flags.state === "string") {
     input.stateId = (await resolveStateId(team.id, parsed.flags.state)).id;
   }
-  const lf = parseLabelFlags(parsed.flags, splitList);
-  const { addIds: labelIds } = await resolveLabelOps(team.id, lf.replace ?? lf.add, []);
+  const labelIds = await resolveLabelIds(team.id, splitList(parsed.flags.label as string | undefined));
   if (labelIds.length > 0) input.labelIds = labelIds;
   if (typeof parsed.flags.parent === "string") {
     input.parentId = (await resolveIssueRef(parsed.flags.parent)).uuid;
